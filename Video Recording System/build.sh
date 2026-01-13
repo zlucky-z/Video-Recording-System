@@ -1,0 +1,1 @@
+g++ -std=c++17 -O0  -pthread -I../lintech/celectronicfence -o main main.c -lpthread

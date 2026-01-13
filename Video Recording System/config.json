@@ -1,0 +1,8 @@
+{
+    "dual_stream_enabled": false,
+    "rtsp_url1": "rtsp://192.168.1.63:554/media/video1",
+    "rtsp_url2": "rtsp://192.168.1.63:554/media/video1",
+    "save_path1": "/mnt/tfcard/videos1",
+    "save_path2": "/mnt/tfcard/videos2",
+    "segment_time": 120
+}

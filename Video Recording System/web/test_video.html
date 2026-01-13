@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频播放测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .video-container {
+            margin-bottom: 20px;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            color: red;
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+        }
+        .success {
+            color: green;
+            background: #f0fff4;
+            border: 1px solid #c6f6d5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>视频播放测试</h1>
+        
+        <div class="video-container">
+            <h3>测试视频播放</h3>
+            <video id="testVideo" controls preload="metadata">
+                您的浏览器不支持视频播放。
+            </video>
+        </div>
+        
+        <div class="controls">
+            <button onclick="loadVideo()">加载视频</button>
+            <button onclick="testOptimizedVideo()">测试优化视频</button>
+            <button onclick="testRange()">测试Range请求</button>
+            <button onclick="checkVideoInfo()">检查视频信息</button>
+            <button onclick="clearLog()">清除日志</button>
+        </div>
+        
+        <div id="log" class="info">
+            准备测试视频播放...<br>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('testVideo');
+        const logDiv = document.getElementById('log');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : (type === 'success' ? 'success' : '');
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '日志已清除...<br>';
+        }
+        
+        async function loadVideo() {
+            try {
+                log('开始加载视频...');
+                
+                // 获取文件列表
+                const response = await fetch('/api/files');
+                const data = await response.json();
+                
+                if (data.files && data.files.length > 0) {
+                    const firstFile = data.files[0];
+                    const videoUrl = `/api/preview/${firstFile.relativePath}`;
+                    
+                    log(`尝试加载视频: ${firstFile.name}`);
+                    log(`视频URL: ${videoUrl}`);
+                    log(`文件大小: ${(firstFile.size / 1024 / 1024).toFixed(2)} MB`);
+                    
+                    video.src = videoUrl;
+                    
+                    // 添加事件监听器
+                    video.onloadstart = () => log('开始加载视频数据', 'info');
+                    video.onloadedmetadata = () => {
+                        log(`视频元数据已加载 - 时长: ${video.duration.toFixed(2)}秒, 分辨率: ${video.videoWidth}x${video.videoHeight}`, 'success');
+                    };
+                    video.onloadeddata = () => log('视频数据已加载', 'success');
+                    video.oncanplay = () => log('视频可以开始播放', 'success');
+                    video.oncanplaythrough = () => log('视频可以流畅播放', 'success');
+                    video.onerror = (e) => {
+                        log(`视频加载错误: ${e.target.error ? e.target.error.message : '未知错误'}`, 'error');
+                    };
+                    video.onstalled = () => log('视频加载停滞', 'error');
+                    video.onwaiting = () => log('视频缓冲中...', 'info');
+                    video.onplaying = () => log('视频开始播放', 'success');
+                    video.onpause = () => log('视频暂停', 'info');
+                    
+                } else {
+                    log('没有找到可用的视频文件', 'error');
+                }
+            } catch (error) {
+                log(`加载视频失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testOptimizedVideo() {
+            try {
+                log('开始加载优化后的测试视频...');
+                
+                const videoUrl = '/api/test-video';
+                
+                log(`测试视频URL: ${videoUrl}`);
+                log('这是一个moov atom在文件开头的优化视频');
+                
+                video.src = videoUrl;
+                
+                // 添加事件监听器
+                video.onloadstart = () => log('开始加载优化视频数据', 'info');
+                video.onloadedmetadata = () => {
+                    log(`优化视频元数据已加载 - 时长: ${video.duration.toFixed(2)}秒, 分辨率: ${video.videoWidth}x${video.videoHeight}`, 'success');
+                };
+                video.onloadeddata = () => log('优化视频数据已加载', 'success');
+                video.oncanplay = () => log('优化视频可以开始播放', 'success');
+                video.oncanplaythrough = () => log('优化视频可以流畅播放', 'success');
+                video.onerror = (e) => {
+                    log(`优化视频加载错误: ${e.target.error ? e.target.error.message : '未知错误'}`, 'error');
+                };
+                video.onstalled = () => log('优化视频加载停滞', 'error');
+                video.onwaiting = () => log('优化视频缓冲中...', 'info');
+                video.onplaying = () => log('优化视频开始播放', 'success');
+                video.onpause = () => log('优化视频暂停', 'info');
+                
+            } catch (error) {
+                log(`加载优化视频失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRange() {
+            try {
+                log('测试Range请求支持...');
+                
+                const response = await fetch('/api/files');
+                const data = await response.json();
+                
+                if (data.files && data.files.length > 0) {
+                    const firstFile = data.files[0];
+                    const videoUrl = `/api/preview/${firstFile.relativePath}`;
+                    
+                    // 测试Range请求
+                    const rangeResponse = await fetch(videoUrl, {
+                        headers: {
+                            'Range': 'bytes=0-1023'
+                        }
+                    });
+                    
+                    log(`Range请求状态: ${rangeResponse.status}`);
+                    log(`Content-Range: ${rangeResponse.headers.get('Content-Range')}`);
+                    log(`Accept-Ranges: ${rangeResponse.headers.get('Accept-Ranges')}`);
+                    log(`Content-Length: ${rangeResponse.headers.get('Content-Length')}`);
+                    
+                    if (rangeResponse.status === 206) {
+                        log('Range请求支持正常', 'success');
+                    } else {
+                        log('Range请求可能不被支持', 'error');
+                    }
+                } else {
+                    log('没有找到可用的视频文件', 'error');
+                }
+            } catch (error) {
+                log(`Range测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkVideoInfo() {
+            if (video.src) {
+                log('=== 视频信息 ===');
+                log(`URL: ${video.src}`);
+                log(`就绪状态: ${video.readyState}`);
+                log(`网络状态: ${video.networkState}`);
+                log(`是否暂停: ${video.paused}`);
+                log(`是否结束: ${video.ended}`);
+                log(`当前时间: ${video.currentTime}`);
+                log(`时长: ${video.duration}`);
+                log(`缓冲范围: ${video.buffered.length > 0 ? video.buffered.end(0) : 0}`);
+                
+                if (video.error) {
+                    log(`错误代码: ${video.error.code}`, 'error');
+                    log(`错误信息: ${video.error.message}`, 'error');
+                }
+            } else {
+                log('请先加载视频', 'error');
+            }
+        }
+        
+        // 页面加载时自动测试
+        window.onload = function() {
+            log('页面已加载，可以开始测试');
+        };
+    </script>
+</body>
+</html> 
